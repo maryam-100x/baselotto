@@ -1,6 +1,6 @@
 'use client';
+
 import { useState, useEffect } from 'react';
-import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Wallet,
@@ -9,285 +9,403 @@ import {
   Trophy,
   Clock,
   TrendingUp,
-  Sparkles,
   ArrowRight,
+  Search,
   Zap,
+  Activity,
   Star,
-  Activity
+  ChevronRight,
+  ShieldCheck,
+  Sun,
+  Moon
 } from 'lucide-react';
 
-// --- Components for Visual Flair ---
+// --- Custom Assets ---
 
-// A glowing background blob effect
-const BackgroundGlow = () => (
-  <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10">
-    <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] bg-blue-600/20 rounded-full blur-[120px] mix-blend-screen animate-pulse" />
-    <div className="absolute bottom-[-10%] right-[-10%] w-[50vw] h-[50vw] bg-purple-600/20 rounded-full blur-[120px] mix-blend-screen animate-pulse" style={{ animationDelay: '2s' }} />
-    <div className="absolute top-[20%] left-[50%] transform -translate-x-1/2 w-[40vw] h-[40vw] bg-indigo-900/20 rounded-full blur-[100px]" />
-    <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 brightness-100 contrast-150"></div>
+// Enhanced Baseball Icon with rotation animation capability
+const BaseballIcon = ({ className = "w-6 h-6" }) => (
+  <svg viewBox="0 0 100 100" className={className}>
+    <circle cx="50" cy="50" r="48" fill="white" stroke="#E31837" strokeWidth="2"/>
+    <path
+      d="M20 30 Q35 50 20 70"
+      stroke="#E31837"
+      strokeWidth="3"
+      fill="none"
+      strokeLinecap="round"
+    />
+    <path
+      d="M80 30 Q65 50 80 70"
+      stroke="#E31837"
+      strokeWidth="3"
+      fill="none"
+      strokeLinecap="round"
+    />
+    {/* Stitching */}
+    {[25, 30, 28, 24].map((x, i) => (
+      <circle key={`l-${i}`} cx={x} cy={35 + i * 10} r="2" fill="#E31837"/>
+    ))}
+    {[75, 70, 72, 76].map((x, i) => (
+      <circle key={`r-${i}`} cx={x} cy={35 + i * 10} r="2" fill="#E31837"/>
+    ))}
+  </svg>
+);
+
+// Stadium Background with dynamic lights
+const StadiumBackground = ({ isDarkMode }) => (
+  <div className={`fixed inset-0 overflow-hidden pointer-events-none -z-10 ${isDarkMode ? 'bg-[#05080f]' : 'bg-slate-50'}`}>
+    {/* Field Gradient */}
+    <div className="absolute bottom-0 left-0 right-0 h-[40vh] bg-gradient-to-t from-green-900/10 to-transparent opacity-50" />
+    
+    {/* Floodlights */}
+    <div className={`absolute top-[-10%] left-[-10%] w-[60vw] h-[60vw] rounded-full blur-[100px] mix-blend-screen ${isDarkMode ? 'bg-blue-600/10' : 'bg-blue-400/20'}`} />
+    <div className={`absolute top-[-10%] right-[-10%] w-[60vw] h-[60vw] rounded-full blur-[100px] mix-blend-screen ${isDarkMode ? 'bg-[#E31837]/10' : 'bg-[#E31837]/10'}`} />
+    
+    {/* Noise Texture for gritty sports feel */}
+    <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] brightness-100 contrast-150"></div>
   </div>
 );
 
-// High-end glass card component
-const GlassCard = ({ children, className = "", delay = 0 }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.5, delay, ease: "easeOut" }}
-    whileHover={{ scale: 1.02, transition: { duration: 0.2 } }}
-    className={`relative overflow-hidden bg-white/[0.03] backdrop-blur-xl border border-white/[0.08] shadow-2xl rounded-3xl ${className}`}
-  >
-    <div className="absolute inset-0 bg-gradient-to-br from-white/[0.05] to-transparent opacity-0 hover:opacity-100 transition-opacity duration-500" />
-    {children}
-  </motion.div>
+// Jumbotron Style Card
+const JumbotronCard = ({ children, className = "", isDarkMode }) => (
+  <div className={`relative overflow-hidden border-2 rounded-2xl shadow-2xl ${isDarkMode ? 'bg-[#0a0f1c] border-[#1a2333]' : 'bg-white border-slate-200'} ${className}`}>
+    {/* Dot Matrix Texture Overlay */}
+    <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.02]" />
+    <div className={`absolute inset-0 pointer-events-none ${isDarkMode ? 'bg-gradient-to-b from-white/[0.02] to-transparent' : 'bg-gradient-to-b from-black/[0.01] to-transparent'}`} />
+    <div className="relative z-10">{children}</div>
+  </div>
 );
+
+// Animated counter hook
+const useCountAnimation = (targetValue: string, duration = 2000) => {
+  const [displayValue, setDisplayValue] = useState(targetValue);
+
+  useEffect(() => {
+    const target = parseFloat(targetValue);
+    if (isNaN(target)) return;
+
+    const start = parseFloat(displayValue) || 0;
+    const increment = (target - start) / (duration / 16); // 60fps
+    let current = start;
+
+    const timer = setInterval(() => {
+      current += increment;
+      if ((increment > 0 && current >= target) || (increment < 0 && current <= target)) {
+        setDisplayValue(target.toFixed(4));
+        clearInterval(timer);
+      } else {
+        setDisplayValue(current.toFixed(4));
+      }
+    }, 16);
+
+    return () => clearInterval(timer);
+  }, [targetValue, duration]);
+
+  return displayValue;
+};
 
 export default function Home() {
   const [jackpot, setJackpot] = useState('0.0000');
+  const animatedJackpot = useCountAnimation(jackpot, 2000);
   const [timeLeft, setTimeLeft] = useState('59:59');
+  const [walletAddress, setWalletAddress] = useState('');
+  const [userTickets, setUserTickets] = useState(null);
+  const [winChance, setWinChance] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(true);
 
-  // Logic remains untouched
   useEffect(() => {
     const interval = setInterval(() => {
       const now = new Date();
-      const minutes = 59 - now.getMinutes() % 60;
+      const minutes = 59 - (now.getMinutes() % 60);
       const seconds = 59 - now.getSeconds();
       setTimeLeft(`${minutes}:${seconds.toString().padStart(2, '0')}`);
     }, 1000);
     return () => clearInterval(interval);
   }, []);
 
+  // Test function to simulate jackpot updates (you can remove this later)
+  useEffect(() => {
+    const testInterval = setInterval(() => {
+      const randomJackpot = (Math.random() * 10).toFixed(4);
+      setJackpot(randomJackpot);
+    }, 5000); // Updates every 5 seconds for demo
+    return () => clearInterval(testInterval);
+  }, []);
+
+  const handleCheckStats = async () => {
+    if (!walletAddress || walletAddress.length < 5) return;
+    
+    setIsLoading(true);
+    setTimeout(() => {
+      setUserTickets(0);
+      setWinChance('0.00');
+      setIsLoading(false);
+    }, 1200);
+  };
+
+  const toggleTheme = () => setIsDarkMode(!isDarkMode);
+
   return (
-    <div className="min-h-screen bg-[#03040B] text-white font-sans selection:bg-blue-500/30">
-      {/* Import Premium Fonts */}
+    <div className={`min-h-screen font-sans selection:bg-[#E31837]/30 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
       <style jsx global>{`
-        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Space+Grotesk:wght@300;500;700&display=swap');
-        
-        body { font-family: 'Outfit', sans-serif; }
-        h1, h2, h3, .font-display { font-family: 'Space Grotesk', sans-serif; }
-        
-        .text-glow { text-shadow: 0 0 40px rgba(59, 130, 246, 0.5); }
-        .text-glow-gold { text-shadow: 0 0 40px rgba(234, 179, 8, 0.3); }
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Chakra+Petch:wght@400;600;700&family=Space+Grotesk:wght@300;500;700&display=swap');
+        body { font-family: 'Outfit', sans-serif; background-color: ${isDarkMode ? '#05080f' : '#f8fafc'}; }
+        .font-sport { font-family: 'Chakra Petch', sans-serif; }
+        .font-display { font-family: 'Space Grotesk', sans-serif; }
+        .text-baseball-red { color: #E31837; }
+        .bg-baseball-red { background-color: #E31837; }
+        .border-baseball-red { border-color: #E31837; }
       `}</style>
 
-      <BackgroundGlow />
+      <StadiumBackground isDarkMode={isDarkMode} />
 
       {/* --- Header --- */}
-      <header className="sticky top-0 z-50 border-b border-white/[0.05] bg-[#03040B]/70 backdrop-blur-2xl">
+      <header className={`sticky top-0 z-50 border-b backdrop-blur-xl ${isDarkMode ? 'border-white/[0.08] bg-[#05080f]/80' : 'border-slate-200 bg-white/80'}`}>
         <div className="container mx-auto px-6 h-20 flex justify-between items-center">
           <motion.div 
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="flex items-center gap-4 group cursor-pointer"
+            className="flex items-center gap-3 group cursor-pointer"
           >
             <div className="relative">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-blue-500/20 group-hover:shadow-blue-500/40 transition-shadow duration-300">
-                <Zap className="w-5 h-5 text-white fill-white" />
+              <div className={`w-10 h-10 rounded-full bg-white flex items-center justify-center group-hover:rotate-180 transition-transform duration-700 ease-in-out ${isDarkMode ? 'shadow-[0_0_15px_rgba(255,255,255,0.2)]' : 'shadow-md'}`}>
+                <BaseballIcon className="w-10 h-10" />
               </div>
-              <div className="absolute -inset-1 bg-blue-500 rounded-xl blur opacity-20 group-hover:opacity-40 transition-opacity" />
             </div>
-            <h1 className="text-2xl font-bold font-display tracking-tight text-white group-hover:text-blue-200 transition-colors">
-              JACKSPOT<span className="text-blue-500">.xyz</span>
-            </h1>
+            <div className="flex flex-col">
+              <h1 className={`text-xl font-bold font-sport tracking-wide leading-none ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                BASEBALL
+              </h1>
+              <span className="text-[10px] font-bold tracking-[0.2em] text-[#E31837] uppercase">Official Lotto</span>
+            </div>
           </motion.div>
           
-          <div className="flex items-center gap-4">
-             {/* Note: ConnectButton styling is controlled by RainbowKit theme, but we wrap it for layout */}
-             <div className="hover:scale-105 transition-transform duration-200">
-               <ConnectButton />
-             </div>
+          {/* Desktop Nav & Actions */}
+          <div className="flex items-center gap-6">
+            <div className={`hidden md:flex items-center gap-6 text-sm font-medium ${isDarkMode ? 'text-white/50' : 'text-slate-500'}`}>
+                {['How to Play', 'Prizes', 'Contract'].map((item) => (
+                  <a key={item} href="#" className={`transition-colors ${isDarkMode ? 'hover:text-white' : 'hover:text-slate-900'}`}>{item}</a>
+                ))}
+            </div>
+            {/* Theme Toggle */}
+            <button 
+              onClick={toggleTheme} 
+              className={`p-2 rounded-full transition-colors ${isDarkMode ? 'bg-white/5 hover:bg-white/10 text-white' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'}`}
+            >
+              {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+            </button>
           </div>
         </div>
       </header>
 
       {/* --- Main Content --- */}
-      <main className="container mx-auto px-4 py-16 lg:py-24 relative z-10">
+      <main className="container mx-auto px-4 py-12 relative z-10">
         
-        {/* Hero Section */}
+        {/* Wallet Search Bar (Floating) */}
         <motion.div 
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.8 }}
-          className="text-center mb-24 relative"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="max-w-2xl mx-auto mb-16 relative z-30"
         >
-          {/* Decorative Elements */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-transparent blur-[80px] rounded-full pointer-events-none" />
-
-          <motion.div 
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 mb-8 backdrop-blur-md"
-          >
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
-            </span>
-            <span className="text-xs font-bold tracking-widest uppercase text-blue-300">Live Jackpot</span>
-          </motion.div>
-
-          <h2 className="text-lg md:text-xl text-blue-200/80 mb-2 font-light tracking-wide">CURRENT PRIZE POOL</h2>
-          
-          <div className="relative inline-block group">
-            <motion.div
-              className="text-7xl md:text-9xl font-black font-display tracking-tighter mb-4"
-              animate={{ textShadow: ["0 0 20px rgba(250,204,21,0.1)", "0 0 40px rgba(250,204,21,0.3)", "0 0 20px rgba(250,204,21,0.1)"] }}
-              transition={{ duration: 3, repeat: Infinity }}
-            >
-              <span className="bg-gradient-to-b from-yellow-200 via-yellow-400 to-yellow-600 bg-clip-text text-transparent">
-                {jackpot} <span className="text-4xl md:text-6xl text-yellow-500/50 align-top mt-4 inline-block">ETH</span>
-              </span>
-            </motion.div>
-            
-            {/* Value Bubble */}
-            <div className="absolute -right-12 -top-4 rotate-12 bg-white/5 border border-white/10 backdrop-blur-md px-3 py-1 rounded-lg text-sm text-yellow-200/80 shadow-xl hidden md:block">
-              ≈ $0.00 USD
+          <div className="relative group">
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-[#E31837] rounded-2xl blur opacity-20 group-hover:opacity-30 transition-opacity" />
+            <div className={`relative flex items-center border rounded-2xl p-2 shadow-xl ${isDarkMode ? 'bg-[#0a0f1c] border-white/10' : 'bg-white border-slate-200'}`}>
+               <div className={`pl-4 ${isDarkMode ? 'text-white/40' : 'text-slate-400'}`}>
+                 <Wallet className="w-5 h-5" />
+               </div>
+               <input
+                 type="text"
+                 placeholder="Enter wallet address to check tickets..."
+                 value={walletAddress}
+                 onChange={(e) => setWalletAddress(e.target.value)}
+                 className={`flex-1 bg-transparent border-none px-4 py-3 focus:ring-0 outline-none font-mono text-sm ${isDarkMode ? 'text-white placeholder-white/20' : 'text-slate-900 placeholder-slate-400'}`}
+               />
+               <button 
+                 onClick={handleCheckStats}
+                 disabled={isLoading}
+                 className={`px-6 py-2.5 font-bold rounded-xl transition-colors disabled:opacity-50 flex items-center gap-2 ${isDarkMode ? 'bg-white text-[#05080f] hover:bg-gray-200' : 'bg-slate-900 text-white hover:bg-slate-800'}`}
+               >
+                 {isLoading ? <Activity className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+                 <span className="hidden sm:inline">{isLoading ? 'Scanning...' : 'Check Stats'}</span>
+               </button>
             </div>
           </div>
         </motion.div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto mb-24">
-          
-          {/* Countdown Timer (Double Width) */}
-          <GlassCard className="lg:col-span-2 p-8 flex flex-col justify-between group" delay={0.2}>
-            <div className="flex items-start justify-between mb-8">
-              <div>
-                <h3 className="text-blue-100 font-semibold flex items-center gap-2">
-                  <Clock className="w-5 h-5 text-blue-400" />
-                  Next Draw
-                </h3>
-                <p className="text-sm text-slate-400 mt-1">Round closes shortly</p>
-              </div>
-              <div className="w-12 h-12 rounded-2xl bg-blue-500/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <Activity className="w-6 h-6 text-blue-400" />
-              </div>
+        {/* Hero Section - The Jumbotron */}
+        <div className="max-w-5xl mx-auto text-center mb-24">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.8 }}
+            className="relative" 
+          >
+            {/* Live Indicator */}
+            <div className={`absolute top-[-30px] left-1/2 transform -translate-x-1/2 inline-flex items-center gap-2 px-4 py-1.5 rounded-full border backdrop-blur-md z-20 ${isDarkMode ? 'bg-[#E31837]/10 border-[#E31837]/30' : 'bg-[#E31837]/5 border-[#E31837]/20'}`}>
+               <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-[#E31837]"></span>
+                </span>
+              <span className={`text-xs font-bold tracking-widest uppercase ${isDarkMode ? 'text-red-200' : 'text-red-600'}`}>Live Season</span>
             </div>
-            <div className="relative">
-              <div className="text-6xl md:text-7xl font-mono font-bold tracking-tight text-white tabular-nums">
-                {timeLeft}
-              </div>
-              <div className="absolute bottom-2 right-0 text-xs font-mono text-blue-500/50">HRS : MINS</div>
-            </div>
-          </GlassCard>
 
-          {/* User Tickets */}
-          <GlassCard className="p-8 group" delay={0.3}>
-            <div className="flex items-start justify-between mb-8">
-              <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center mb-4 border border-purple-500/20 group-hover:rotate-12 transition-transform">
-                <Ticket className="w-5 h-5 text-purple-300" />
-              </div>
-              <div className="px-2 py-1 rounded bg-purple-500/10 text-[10px] font-bold text-purple-300 uppercase tracking-wider">
-                Entry
-              </div>
+            <div className="relative inline-block mb-12">
+               {/* Scoreboard Frame */}
+               <div className={`absolute -inset-4 rounded-3xl -z-10 border ${isDarkMode ? 'bg-gradient-to-b from-[#1a2333] to-[#0a0f1c] border-white/5' : 'bg-gradient-to-b from-slate-100 to-white border-slate-200 shadow-xl'}`} />
+               <div className={`absolute -inset-1 rounded-2xl -z-10 ${isDarkMode ? 'bg-black/50' : 'bg-slate-50/50'}`} />
+               
+               <h2 className={`text-sm font-bold tracking-[0.3em] uppercase mb-4 pt-2 ${isDarkMode ? 'text-gray-500' : 'text-slate-400'}`}>Grand Slam Jackpot</h2>
+               <div className="flex items-baseline justify-center gap-3 px-8 pb-4">
+                  <span className={`text-7xl md:text-9xl font-sport font-bold tracking-tighter ${isDarkMode ? 'text-white drop-shadow-[0_0_25px_rgba(255,255,255,0.15)]' : 'text-slate-900'}`}>
+                    {animatedJackpot}
+                  </span>
+                  <span className="text-4xl md:text-5xl font-sport font-bold text-[#E31837]">ETH</span>
+               </div>
+               <div className={`w-full h-px mb-4 ${isDarkMode ? 'bg-white/10' : 'bg-slate-200'}`} />
+               <p className={`font-mono text-sm pb-4 ${isDarkMode ? 'text-white/40' : 'text-slate-400'}`}>≈ $0.00 USD</p>
             </div>
-            <div className="text-4xl font-bold text-white mb-2">0</div>
-            <p className="text-sm text-purple-200/60">Connect wallet to view tickets</p>
-          </GlassCard>
 
-          {/* Win Chance */}
-          <GlassCard className="p-8 group relative" delay={0.4}>
-             <div className="absolute inset-0 bg-gradient-to-t from-green-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-            <div className="flex items-start justify-between mb-8">
-              <div className="w-10 h-10 rounded-xl bg-green-500/20 flex items-center justify-center mb-4 border border-green-500/20 group-hover:rotate-12 transition-transform">
-                <TrendingUp className="w-5 h-5 text-green-300" />
-              </div>
-              <div className="px-2 py-1 rounded bg-green-500/10 text-[10px] font-bold text-green-300 uppercase tracking-wider">
-                Odds
-              </div>
+            {/* Scoreboard Grid Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Timer */}
+              <JumbotronCard className="p-6 group" isDarkMode={isDarkMode}>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className={`font-sport text-sm uppercase tracking-wider ${isDarkMode ? 'text-white/60' : 'text-slate-500'}`}>Next Pitch</h3>
+                  <Clock className="w-5 h-5 text-blue-500" />
+                </div>
+                <div className={`text-4xl font-sport font-bold tabular-nums group-hover:text-blue-400 transition-colors ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                  {timeLeft}
+                </div>
+                <div className={`w-full h-1 mt-4 rounded-full overflow-hidden ${isDarkMode ? 'bg-gray-800' : 'bg-slate-200'}`}>
+                  <div className="bg-blue-500 h-full w-3/4 animate-pulse" />
+                </div>
+              </JumbotronCard>
+
+              {/* Tickets */}
+              <JumbotronCard className="p-6 group" isDarkMode={isDarkMode}>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className={`font-sport text-sm uppercase tracking-wider ${isDarkMode ? 'text-white/60' : 'text-slate-500'}`}>Your Tickets</h3>
+                  <Ticket className="w-5 h-5 text-[#E31837]" />
+                </div>
+                <div className={`text-4xl font-sport font-bold group-hover:text-[#E31837] transition-colors ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                  {userTickets !== null ? userTickets : '--'}
+                </div>
+                <p className={`text-xs mt-4 font-mono ${isDarkMode ? 'text-white/30' : 'text-slate-400'}`}>
+                  {userTickets === null ? 'CONNECT WALLET' : 'IN PLAY'}
+                </p>
+              </JumbotronCard>
+
+              {/* Win Chance */}
+              <JumbotronCard className="p-6 group" isDarkMode={isDarkMode}>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className={`font-sport text-sm uppercase tracking-wider ${isDarkMode ? 'text-white/60' : 'text-slate-500'}`}>Batting Avg</h3>
+                  <TrendingUp className="w-5 h-5 text-yellow-500" />
+                </div>
+                <div className={`text-4xl font-sport font-bold group-hover:text-yellow-400 transition-colors ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                  {winChance !== null ? `${winChance}%` : '.000'}
+                </div>
+                <p className={`text-xs mt-4 font-mono ${isDarkMode ? 'text-white/30' : 'text-slate-400'}`}>WIN PROBABILITY</p>
+              </JumbotronCard>
             </div>
-            <div className="text-4xl font-bold text-white mb-2">--%</div>
-            <p className="text-sm text-green-200/60">Calculated live</p>
-          </GlassCard>
+
+          </motion.div>
         </div>
 
-        {/* How to Play - Floating Steps */}
+        {/* How to Play - "Game Plan" */}
         <div className="max-w-6xl mx-auto mb-24">
-          <div className="flex items-center justify-center gap-4 mb-12">
-            <div className="h-px w-12 bg-gradient-to-r from-transparent to-blue-500/50" />
-            <h3 className="text-2xl font-bold font-display text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-400">HOW IT WORKS</h3>
-            <div className="h-px w-12 bg-gradient-to-l from-transparent to-blue-500/50" />
+          <div className="flex items-center gap-4 mb-10">
+            <div className="h-8 w-1.5 bg-[#E31837] rounded-full" />
+            <h3 className="text-3xl font-bold font-sport uppercase tracking-wide">The Game Plan</h3>
           </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            {[
-              { icon: Wallet, title: 'Connect', desc: 'Link Web3 Wallet', color: 'bg-blue-500' },
-              { icon: ShoppingCart, title: 'Purchase', desc: 'Buy on Uniswap', color: 'bg-indigo-500' },
-              { icon: Ticket, title: 'Auto-Enter', desc: 'Hold to play', color: 'bg-purple-500' },
-              { icon: Trophy, title: 'Win Prizes', desc: 'Automatic Airdrop', color: 'bg-yellow-500' }
-            ].map((step, i) => (
-              <GlassCard key={i} className="p-6 text-center hover:bg-white/[0.05] transition-colors" delay={0.5 + i * 0.1}>
-                <div className={`w-14 h-14 mx-auto mb-6 rounded-2xl ${step.color} bg-opacity-10 flex items-center justify-center border border-white/10 shadow-[0_0_30px_-10px_rgba(255,255,255,0.1)]`}>
-                  <step.icon className="w-7 h-7 text-white" />
-                </div>
-                <h4 className="text-lg font-bold text-white mb-2">{step.title}</h4>
-                <p className="text-sm text-slate-400 leading-relaxed">{step.desc}</p>
-                {i < 3 && (
-                  <div className="hidden md:block absolute top-1/2 -right-2 w-4 h-[2px] bg-white/10 translate-y-[-50%]" />
-                )}
-              </GlassCard>
-            ))}
+          
+          <div className="grid md:grid-cols-4 gap-4">
+             {[
+               { icon: ShoppingCart, title: "Draft Players", sub: "Buy $BASEBALL", desc: "Get tokens on Uniswap via Base Network." },
+               { icon: ShieldCheck, title: "Hold the Line", sub: "Auto-Entry", desc: "Holding 10k+ tokens is your season pass." },
+               { icon: Zap, title: "Play Ball", sub: "Hourly Draws", desc: "Every hour is a new inning to win." },
+               { icon: Trophy, title: "Grand Slam", sub: "Automatic Payouts", desc: "ETH winnings sent directly to your wallet." }
+             ].map((item, i) => (
+               <motion.div 
+                 key={i} 
+                 whileHover={{ y: -5 }}
+                 className={`relative p-6 rounded-2xl border transition-colors group ${isDarkMode ? 'border-white/10 bg-[#0c1221] hover:bg-[#11192b]' : 'border-slate-200 bg-white hover:bg-slate-50 shadow-sm'}`}
+               >
+                 <div className={`absolute top-0 right-0 w-24 h-24 bg-gradient-to-br rounded-bl-[100px] pointer-events-none ${isDarkMode ? 'from-white/5 to-transparent' : 'from-slate-100 to-transparent'}`} />
+                 <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-6 group-hover:bg-[#E31837] group-hover:text-white transition-all duration-300 ${isDarkMode ? 'bg-white/5' : 'bg-slate-100'}`}>
+                    <item.icon className={`w-6 h-6 group-hover:text-white ${isDarkMode ? 'text-white/70' : 'text-slate-600'}`} />
+                 </div>
+                 <h4 className="text-sm font-bold text-[#E31837] uppercase tracking-wider mb-1">{item.sub}</h4>
+                 <h3 className={`text-xl font-bold mb-3 font-sport ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{item.title}</h3>
+                 <p className={`text-sm leading-relaxed ${isDarkMode ? 'text-white/50' : 'text-slate-500'}`}>{item.desc}</p>
+               </motion.div>
+             ))}
           </div>
         </div>
 
         {/* CTA Section */}
         <div className="flex justify-center mb-24 relative z-20">
           <motion.button
-            whileHover={{ scale: 1.05 }}
+            whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            className="group relative px-10 py-5 bg-blue-600 rounded-2xl overflow-hidden shadow-2xl shadow-blue-600/30"
+            className="group relative px-12 py-6 bg-[#E31837] rounded-xl overflow-hidden shadow-[0_0_40px_rgba(227,24,55,0.4)]"
           >
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-600 opacity-100 group-hover:opacity-90 transition-opacity" />
-            <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20" />
-            <span className="relative z-10 flex items-center gap-3 text-xl font-bold text-white">
-              Buy LOTTO Token
-              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000 ease-in-out" />
+            <span className="relative z-10 flex items-center gap-3 text-xl font-bold font-sport uppercase tracking-wider text-white">
+              Buy $BASEBALL on Uniswap
+              <ArrowRight className="w-6 h-6 group-hover:translate-x-2 transition-transform" />
             </span>
           </motion.button>
         </div>
 
-        {/* Recent Winners (Hollow Glass Design) */}
+        {/* Recent Winners - "Hall of Fame" */}
         <motion.div 
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           className="max-w-3xl mx-auto"
         >
-          <div className="rounded-3xl border border-white/10 bg-black/40 backdrop-blur-md overflow-hidden">
-            <div className="p-6 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-yellow-500/10 rounded-lg">
-                  <Trophy className="w-5 h-5 text-yellow-500" />
-                </div>
-                <h3 className="font-bold text-lg">Recent Victories</h3>
+          <div className={`rounded-3xl border relative overflow-hidden ${isDarkMode ? 'border-white/10 bg-[#0a0f1c]' : 'border-slate-200 bg-white shadow-xl'}`}>
+            {/* Decorative stitches */}
+            <div className={`absolute top-0 left-8 w-1 h-full border-l-2 border-dashed ${isDarkMode ? 'border-white/5' : 'border-slate-200'}`} />
+            <div className={`absolute top-0 right-8 w-1 h-full border-r-2 border-dashed ${isDarkMode ? 'border-white/5' : 'border-slate-200'}`} />
+            
+            <div className={`p-6 border-b flex items-center justify-between ${isDarkMode ? 'border-white/5 bg-white/[0.02]' : 'border-slate-100 bg-slate-50'}`}>
+              <div className="flex items-center gap-4 pl-4">
+                <Trophy className="w-6 h-6 text-yellow-500" />
+                <h3 className={`font-bold text-lg font-sport uppercase tracking-wider ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Hall of Fame</h3>
               </div>
-              <div className="flex gap-2">
-                <div className="w-2 h-2 rounded-full bg-red-500" />
-                <div className="w-2 h-2 rounded-full bg-yellow-500" />
-                <div className="w-2 h-2 rounded-full bg-green-500" />
+              <div className="pr-4 flex gap-1">
+                 {[...Array(3)].map((_, i) => (
+                   <div key={i} className="w-2 h-2 rounded-full bg-[#E31837] animate-pulse" style={{ animationDelay: `${i * 0.2}s`}} />
+                 ))}
               </div>
             </div>
             
-            <div className="p-12 text-center">
-              <div className="w-16 h-16 bg-slate-800/50 rounded-full mx-auto mb-4 flex items-center justify-center">
-                 <Star className="w-8 h-8 text-slate-600" />
+            <div className="p-16 text-center">
+              <div className={`w-20 h-20 rounded-full mx-auto mb-6 flex items-center justify-center border ${isDarkMode ? 'bg-[#1a2333] border-white/5' : 'bg-slate-100 border-slate-200'}`}>
+                 <Star className={`w-10 h-10 ${isDarkMode ? 'text-white/20' : 'text-slate-300'}`} />
               </div>
-              <h4 className="text-slate-300 font-medium mb-1">No winners this round yet</h4>
-              <p className="text-sm text-slate-500">The next jackpot could be yours.</p>
+              <h4 className={`font-medium mb-2 text-lg ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>No Home Runs Yet</h4>
+              <p className={`text-sm ${isDarkMode ? 'text-white/40' : 'text-slate-500'}`}>Step up to the plate. The next jackpot could be yours.</p>
             </div>
           </div>
         </motion.div>
       </main>
 
       {/* --- Footer --- */}
-      <footer className="border-t border-white/[0.05] bg-[#020205] relative z-10">
-        <div className="container mx-auto px-4 py-12">
-          <div className="flex flex-col items-center justify-center gap-4 text-center">
-             <div className="w-10 h-10 rounded-xl bg-blue-900/20 flex items-center justify-center border border-blue-500/10">
-                <Zap className="w-5 h-5 text-blue-500" />
+      <footer className={`border-t relative z-10 py-12 ${isDarkMode ? 'border-white/[0.08] bg-[#020305]' : 'border-slate-200 bg-white'}`}>
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col items-center justify-center gap-6 text-center">
+             <div className="flex items-center gap-3 opacity-80 hover:opacity-100 transition-opacity">
+               <BaseballIcon className="w-8 h-8" />
+               <span className={`font-sport font-bold text-lg tracking-wider ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>BASEBALL</span>
              </div>
+             
+             <div className={`h-px w-12 ${isDarkMode ? 'bg-white/10' : 'bg-slate-200'}`} />
+             
              <div>
-               <p className="text-slate-400 font-medium mb-1">Secured by Base Chain</p>
-               <p className="text-xs text-slate-600 uppercase tracking-widest">5% Fee Allocates to Pot</p>
+               <p className={`font-medium mb-1 ${isDarkMode ? 'text-white/60' : 'text-slate-600'}`}>Built on Base Chain</p>
+               <p className={`text-xs uppercase tracking-widest ${isDarkMode ? 'text-white/30' : 'text-slate-400'}`}>Hourly Draws • No Wallet Connect Required</p>
              </div>
           </div>
         </div>
